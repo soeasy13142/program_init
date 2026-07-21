@@ -1,0 +1,210 @@
+#!/bin/sh
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+
+. "${SCRIPT_DIR}/lib/helpers.sh"
+. "${SCRIPT_DIR}/lib/template.sh"
+. "${SCRIPT_DIR}/lib/questions.sh"
+
+# Revert to set -e after sourcing lib files (which use set -eu)
+# to avoid unbound variable errors from optional vars
+set -e
+
+# Default values for optional variables (prevents unbound variable issues)
+TECH_STACK=""
+PROJECT_DESCRIPTION=""
+
+PROJECT_INIT_VERSION="0.1.0"
+
+# --- Defaults ---
+MODE="full"     # full, claude-only
+PROJECT_TYPE=""
+PROJECT_NAME=""
+YES_MODE=0
+
+# --- Parse flags ---
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -n|--name) PROJECT_NAME="$2"; shift 2 ;;
+    -t|--type) PROJECT_TYPE="$2"; shift 2 ;;
+    -c|--claude-only) MODE="claude-only"; shift ;;
+    -y|--yes) YES_MODE=1; shift ;;
+    -v|--version) echo "project-init v${PROJECT_INIT_VERSION}"; exit 0 ;;
+    -h|--help)
+      cat <<EOF
+project-init v${PROJECT_INIT_VERSION}
+一键初始化新项目的 .claude/ 目录和 CLAUDE.md
+
+用法: project-init [选项] [项目目录]
+
+选项:
+  -n, --name <name>    项目名
+  -t, --type <type>    项目类型: cli-tool|web-app|backend-api|knowledge-base|meta-project
+  -c, --claude-only    只生成 CLAUDE.md (已有项目中使用)
+  -y, --yes            非交互模式 (使用所有默认值)
+  -v, --version        版本信息
+  -h, --help           帮助
+
+项目目录:
+  提供时 → 创建该目录并进入
+  省略时 → 使用当前目录
+
+示例:
+  project-init -n my-app -t cli-tool -y
+  project-init my-web-app
+  cd my-project && project-init -c
+EOF
+      exit 0
+    ;;
+    -*)
+      log_error "Unknown flag: $1"
+      exit 1
+    ;;
+    *)
+      PROJECT_DIR="$1"
+      shift
+    ;;
+  esac
+done
+
+# --- Banner ---
+cat << "EOF"
+╭─────────────────────────────╮
+│  project-init v0.1.0       │
+│  一键初始化新项目           │
+╰─────────────────────────────╯
+EOF
+
+# --- Determine target directory ---
+if [ -n "${PROJECT_DIR:-}" ]; then
+  mkdir -p "$PROJECT_DIR"
+  cd "$PROJECT_DIR"
+  log_info "Working in: $(pwd)"
+fi
+
+# --- Interactive Q&A (unless -y) ---
+if [ "$YES_MODE" -eq 0 ] && [ "$MODE" = "full" ]; then
+  eval "$(collect_all "${PROJECT_NAME:-$(basename "$(pwd)")}")"
+else
+  PROJECT_NAME="${PROJECT_NAME:-$(basename "$(pwd)")}"
+  PROJECT_TYPE="${PROJECT_TYPE:-cli-tool}"
+fi
+
+# --- Set template vars ---
+case "$PROJECT_TYPE" in
+  cli-tool|web-app|backend-api|knowledge-base|meta-project)
+    PRESET_FILE="${SCRIPT_DIR}/templates/presets/${PROJECT_TYPE}.md"
+    ;;
+  *)
+    log_error "Unknown project type: $PROJECT_TYPE"
+    exit 1
+    ;;
+esac
+
+# Load preset content
+PRESET_CONTENT=""
+if [ -f "$PRESET_FILE" ]; then
+  PRESET_CONTENT=$(cat "$PRESET_FILE")
+fi
+
+# --- Full mode: git init + .claude/ ---
+if [ "$MODE" = "full" ]; then
+  check_dependencies git
+
+  if [ -d ".git" ]; then
+    log_info "Git already initialized"
+  else
+    git init > /dev/null 2>&1
+    log_success "git init"
+  fi
+
+  mkdir -p .claude/rules
+  log_success ".claude/ directory created"
+
+  # Write .gitignore if not exists
+  if [ ! -f ".gitignore" ]; then
+    cat > .gitignore << 'GITIGNORE'
+.DS_Store
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.tmp
+GITIGNORE
+    log_success ".gitignore created"
+  fi
+
+  # Write basic project .claude/settings.json
+  mkdir -p .claude
+  cat > .claude/settings.json << 'SETTINGS'
+{
+  "permissions": {
+    "allow": [],
+    "deny": []
+  }
+}
+SETTINGS
+  log_success ".claude/settings.json created"
+fi
+
+# --- Generate CLAUDE.md ---
+UNIVERSAL_TEMPLATE="${SCRIPT_DIR}/templates/universal.md"
+CLAUDE_MD_PATH="$(pwd)/CLAUDE.md"
+
+# Parse tech stack into components
+LANGUAGE=""
+FRAMEWORK=""
+TEST_FRAMEWORK=""
+RUNTIME=""
+case "$PROJECT_TYPE" in
+  cli-tool)
+    LANGUAGE="${TECH_STACK%%,*}"
+    TEST_FRAMEWORK="$(echo "${TECH_STACK}" | grep -oE 'pytest|bats|go test|cargo test|jest' || echo 'standard')"
+    SHEBANG="bash"
+    MODULE_BOUNDARIES="(由项目自定义)"
+    ;;
+  web-app)
+    LANGUAGE="JavaScript/TypeScript"
+    FRAMEWORK="${TECH_STACK}"
+    TEST_FRAMEWORK="jest/vitest"
+    RUNTIME="Node.js"
+    UI_FRAMEWORK="${TECH_STACK}"
+    STATE_MANAGEMENT="(由项目自定义)"
+    MOCK_TOOL="vitest mocks / MSW"
+    MODULE_BOUNDARIES="(由项目自定义)"
+    ;;
+esac
+
+render_template "$UNIVERSAL_TEMPLATE" "$CLAUDE_MD_PATH" \
+  "PROJECT_NAME=$PROJECT_NAME" \
+  "PROJECT_DESCRIPTION=${PROJECT_DESCRIPTION:-}" \
+  "LANGUAGE=$LANGUAGE" \
+  "FRAMEWORK=$FRAMEWORK" \
+  "TEST_FRAMEWORK=$TEST_FRAMEWORK" \
+  "RUNTIME=$RUNTIME" \
+  "PRESET_CONTENT=$PRESET_CONTENT" \
+  "SHEBANG=${SHEBANG:-}" \
+  "MODULE_BOUNDARIES=${MODULE_BOUNDARIES:-}" \
+  "UI_FRAMEWORK=${UI_FRAMEWORK:-}" \
+  "STATE_MANAGEMENT=${STATE_MANAGEMENT:-}" \
+  "MOCK_TOOL=${MOCK_TOOL:-}"
+
+log_success "CLAUDE.md generated"
+
+# --- Initial commit (full mode) ---
+if [ "$MODE" = "full" ]; then
+  git add -A > /dev/null 2>&1
+  git commit -m "chore: initialize project with project-init" > /dev/null 2>&1 || true
+  log_success "Initial commit created"
+fi
+
+# --- Summary ---
+echo ""
+log_success "Done! Project initialized at $(pwd)"
+echo ""
+echo "  ${CYAN}Next steps:${NC}"
+echo "  1. Edit CLAUDE.md to refine project-specific rules"
+echo "  2. Start coding: claude"
+echo ""

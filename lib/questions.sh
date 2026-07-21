@@ -1,8 +1,8 @@
 #!/bin/sh
 set -eu  # -o pipefail omitted for dash compatibility
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-. "${SCRIPT_DIR}/helpers.sh"
+SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "$0")" && pwd)}"
+# helpers.sh is sourced by the entry point (bin/project-init) before this file
 
 ask_project_name() {
   default="${1:-}"

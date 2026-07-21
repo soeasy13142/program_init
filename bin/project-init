@@ -44,9 +44,9 @@ project-init v${PROJECT_INIT_VERSION}
 
 选项:
   -n, --name <name>    项目名
-  -t, --type <type>    项目类型: cli-tool|web-app
+  -t, --type <type>    项目类型: cli-tool|web-app|ts-lib|next-app
   -p, --preset <path>  自定义 preset 文件路径
-  --types <type,type>  批量初始化 (如 cli-tool,web-app)
+  --types <type,type>  批量初始化 (如 cli-tool,web-app,ts-lib,next-app)
   -c, --claude-only    只生成 CLAUDE.md (已有项目中使用)
   -y, --yes, --non-interactive  非交互模式 (使用所有默认值)
   -v, --version        版本信息
@@ -171,16 +171,6 @@ if [ -n "${PROJECT_TYPES:-}" ]; then
   OLD_IFS="$IFS"
   IFS=","
   for t in $PROJECT_TYPES; do
-    # Validate type
-    case "$t" in
-      cli-tool|web-app)
-        ;;
-      *)
-        log_error "Unknown project type: $t"
-        exit 1
-        ;;
-    esac
-
     # Load preset
     pt_preset="${SCRIPT_DIR}/templates/presets/${t}.md"
     pt_content=""
@@ -208,6 +198,29 @@ if [ -n "${PROJECT_TYPES:-}" ]; then
         MOCK_TOOL="vitest mocks / MSW"
         MODULE_BOUNDARIES="(由项目自定义)"
         ;;
+      ts-lib)
+        LANGUAGE="TypeScript"
+        TEST_FRAMEWORK="vitest"
+        RUNTIME="Node.js"
+        MODULE_BOUNDARIES="src/ — 源码
+test/ — 测试文件
+公开 API 通过 src/index.ts re-export"
+        ;;
+      next-app)
+        LANGUAGE="TypeScript"
+        TEST_FRAMEWORK="vitest/playwright"
+        RUNTIME="Node.js"
+        FRAMEWORK="Next.js (App Router)"
+        UI_FRAMEWORK="Next.js (App Router)"
+        MODULE_BOUNDARIES="app/ — Next.js App Router 页面和 API
+components/ — 可复用 React 组件
+lib/ — 工具函数和 API 客户端
+types/ — TypeScript 类型定义"
+        ;;
+      *)
+        log_error "Unknown project type: $t"
+        exit 1
+        ;;
     esac
 
     render_template "$UNIVERSAL_TEMPLATE" "$(pwd)/CLAUDE-${t}.md" \
@@ -229,7 +242,7 @@ else
   # --- Single-type mode ---
   # Set template vars
   case "$PROJECT_TYPE" in
-    cli-tool|web-app)
+    cli-tool|web-app|ts-lib|next-app)
       PRESET_FILE="${SCRIPT_DIR}/templates/presets/${PROJECT_TYPE}.md"
       ;;
     *)
@@ -268,6 +281,25 @@ else
       STATE_MANAGEMENT="(由项目自定义)"
       MOCK_TOOL="vitest mocks / MSW"
       MODULE_BOUNDARIES="(由项目自定义)"
+      ;;
+    ts-lib)
+      LANGUAGE="TypeScript"
+      TEST_FRAMEWORK="vitest"
+      RUNTIME="Node.js"
+      MODULE_BOUNDARIES="src/ — 源码
+test/ — 测试文件
+公开 API 通过 src/index.ts re-export"
+      ;;
+    next-app)
+      LANGUAGE="TypeScript"
+      TEST_FRAMEWORK="vitest/playwright"
+      RUNTIME="Node.js"
+      FRAMEWORK="Next.js (App Router)"
+      UI_FRAMEWORK="Next.js (App Router)"
+      MODULE_BOUNDARIES="app/ — Next.js App Router 页面和 API
+components/ — 可复用 React 组件
+lib/ — 工具函数和 API 客户端
+types/ — TypeScript 类型定义"
       ;;
   esac
 

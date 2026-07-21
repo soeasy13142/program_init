@@ -19,12 +19,16 @@ ask_project_type() {
   echo "  项目类型:"
   echo "    1) cli-tool  — CLI 工具 (Python/Bash/Go/Rust)"
   echo "    2) web-app   — 前端/小程序/Web 应用"
+  echo "    3) ts-lib    — TypeScript 库"
+  echo "    4) next-app  — Next.js 应用"
   printf "  请选择 [1]: "
   read -r choice
   choice="${choice:-1}"
   case "$choice" in
     1) echo "cli-tool" ;;
     2) echo "web-app" ;;
+    3) echo "ts-lib" ;;
+    4) echo "next-app" ;;
     *) echo "cli-tool" ;;
   esac
 }

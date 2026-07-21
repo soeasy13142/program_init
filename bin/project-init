@@ -29,7 +29,7 @@ while [ $# -gt 0 ]; do
     -n|--name) PROJECT_NAME="$2"; shift 2 ;;
     -t|--type) PROJECT_TYPE="$2"; shift 2 ;;
     -c|--claude-only) MODE="claude-only"; shift ;;
-    -y|--yes) YES_MODE=1; shift ;;
+    -y|--yes|--non-interactive) YES_MODE=1; shift ;;
     -v|--version) echo "project-init v${PROJECT_INIT_VERSION}"; exit 0 ;;
     -h|--help)
       cat <<EOF
@@ -42,7 +42,7 @@ project-init v${PROJECT_INIT_VERSION}
   -n, --name <name>    项目名
   -t, --type <type>    项目类型: cli-tool|web-app
   -c, --claude-only    只生成 CLAUDE.md (已有项目中使用)
-  -y, --yes            非交互模式 (使用所有默认值)
+  -y, --yes, --non-interactive  非交互模式 (使用所有默认值)
   -v, --version        版本信息
   -h, --help           帮助
 

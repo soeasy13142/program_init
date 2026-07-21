@@ -9,5 +9,9 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Agent workspaces
+/.claude/worktrees/
+.superpowers/
+
 # Temp
 *.tmp

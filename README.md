@@ -24,9 +24,11 @@ project-init [选项] [项目目录]
 
 选项:
   -n, --name <name>    项目名
-  -t, --type <type>    项目类型: cli-tool|web-app
+  -t, --type <type>    项目类型: cli-tool|web-app|ts-lib|next-app
+  -p, --preset <path>  自定义 preset 文件路径
+  --types <type,type>  批量初始化 (如 cli-tool,web-app,ts-lib,next-app)
   -c, --claude-only    只生成 CLAUDE.md (已有项目中用)
-  -y, --yes            非交互模式
+  -y, --yes, --non-interactive  非交互模式 (使用所有默认值)
   -v, --version        版本
   -h, --help           帮助
 ```
@@ -37,6 +39,8 @@ project-init [选项] [项目目录]
 |------|------|------|
 | `cli-tool` | CLI 工具 | Python/Bash/Go/Rust |
 | `web-app` | Web 应用 | 前端/小程序/Web |
+| `ts-lib` | TypeScript 库 | tsup/tsc + vitest |
+| `next-app` | Next.js 应用 | App Router + Tailwind |
 
 ## CLAUDE.md 模板
 

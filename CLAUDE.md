@@ -46,7 +46,9 @@ ln -s "$(pwd)/bin/project-init" ~/.local/bin/
 
 ### ✅ DO
 - DO **任何不确定立刻问** — 无论大小，一律用 `AskUserQuestion` 工具询问用户，不替用户做任何决定
+- DO **大改动前走 superpowers 流程** — 先写 specs（`docs/superpowers/specs/`），再写 plans（`docs/superpowers/plans/`），最后再实现；小改动可直接编码，无需走完整流程
 - **多步骤/大步骤拆分** — 复杂操作用 `Agent` 工具拆分为多个子任务并行委托 sub-agent 处理，效率怎么高怎么来
+- DO **每次改动后更新交接文档** — 修改任何代码文件后，同步更新 `docs/handover/` 下的交接文档（若无则创建），记录变更内容、原因、影响范围及下一步计划；确保下一位接手的人能直接从文档理解当前状态
 - DO **高频提交** — 每完成一个逻辑步骤立即 `git commit`，不做大捆提交；分支上自由提交，不等用户许可
 - DO 使用 `log_info/success/warn/error` 统一日志，不裸 `echo`
 - DO 新增函数时附带对应的 bats 测试

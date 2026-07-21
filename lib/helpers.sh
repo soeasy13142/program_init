@@ -1,5 +1,5 @@
 #!/bin/sh
-set -euo pipefail
+set -eu  # -o pipefail omitted for dash compatibility (Debian/Ubuntu /bin/sh)
 
 # Colors (disabled if not terminal)
 if [ -t 1 ]; then

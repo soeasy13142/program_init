@@ -50,6 +50,8 @@ download_file "lib/questions.sh" "${SHARE_DIR}/lib/questions.sh"
 download_file "templates/universal.md" "${SHARE_DIR}/templates/universal.md"
 download_file "templates/presets/cli-tool.md" "${SHARE_DIR}/templates/presets/cli-tool.md"
 download_file "templates/presets/web-app.md" "${SHARE_DIR}/templates/presets/web-app.md"
+download_file "templates/presets/ts-lib.md" "${SHARE_DIR}/templates/presets/ts-lib.md"
+download_file "templates/presets/next-app.md" "${SHARE_DIR}/templates/presets/next-app.md"
 
 # Install wrapper in PATH
 cat > "${BIN_DIR}/project-init" << 'WRAPPER'

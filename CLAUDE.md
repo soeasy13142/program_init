@@ -46,6 +46,7 @@ ln -s "$(pwd)/bin/project-init" ~/.local/bin/
 
 ### ✅ DO
 - DO **任何不确定立刻问** — 无论大小，一律用 `AskUserQuestion` 工具询问用户，不替用户做任何决定
+- **多步骤/大步骤拆分** — 复杂操作用 `Agent` 工具拆分为多个子任务并行委托 sub-agent 处理，效率怎么高怎么来
 - DO **高频提交** — 每完成一个逻辑步骤立即 `git commit`，不做大捆提交；分支上自由提交，不等用户许可
 - DO 使用 `log_info/success/warn/error` 统一日志，不裸 `echo`
 - DO 新增函数时附带对应的 bats 测试

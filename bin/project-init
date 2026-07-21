@@ -15,6 +15,7 @@ set -e
 TECH_STACK=""
 PROJECT_DESCRIPTION=""
 PRESET_PATH=""
+PROJECT_TYPES=""
 
 PROJECT_INIT_VERSION="0.1.0"
 
@@ -30,6 +31,7 @@ while [ $# -gt 0 ]; do
     -n|--name) PROJECT_NAME="$2"; shift 2 ;;
     -t|--type) PROJECT_TYPE="$2"; shift 2 ;;
     -p|--preset) PRESET_PATH="$2"; shift 2 ;;
+    --types) PROJECT_TYPES="$2"; shift 2 ;;
     -c|--claude-only) MODE="claude-only"; shift ;;
     -y|--yes|--non-interactive) YES_MODE=1; shift ;;
     -v|--version) echo "project-init v${PROJECT_INIT_VERSION}"; exit 0 ;;
@@ -44,6 +46,7 @@ project-init v${PROJECT_INIT_VERSION}
   -n, --name <name>    项目名
   -t, --type <type>    项目类型: cli-tool|web-app
   -p, --preset <path>  自定义 preset 文件路径
+  --types <type,type>  批量初始化 (如 cli-tool,web-app)
   -c, --claude-only    只生成 CLAUDE.md (已有项目中使用)
   -y, --yes, --non-interactive  非交互模式 (使用所有默认值)
   -v, --version        版本信息
@@ -89,7 +92,9 @@ fi
 # --- Interactive Q&A (unless -y) ---
 if [ "$YES_MODE" -eq 0 ] && [ "$MODE" = "full" ]; then
   PROJECT_NAME=$(ask_project_name "${PROJECT_NAME:-$(basename "$(pwd)")}")
-  PROJECT_TYPE=$(ask_project_type)
+  if [ -z "${PROJECT_TYPES:-}" ]; then
+    PROJECT_TYPE=$(ask_project_type)
+  fi
   PROJECT_DESCRIPTION=$(ask_description)
   TECH_STACK=$(ask_tech_stack)
   CUSTOM_RULES=$(ask_custom_rules)
@@ -98,32 +103,23 @@ else
   PROJECT_TYPE="${PROJECT_TYPE:-cli-tool}"
 fi
 
-# --- Set template vars ---
+# --- Validate flags ---
 # Validate --preset path if provided
 if [ -n "${PRESET_PATH:-}" ] && [ ! -f "$PRESET_PATH" ]; then
   log_error "Preset file not found: $PRESET_PATH"
   exit 1
 fi
 
-case "$PROJECT_TYPE" in
-  cli-tool|web-app)
-    PRESET_FILE="${SCRIPT_DIR}/templates/presets/${PROJECT_TYPE}.md"
-    ;;
-  *)
-    log_error "Unknown project type: $PROJECT_TYPE"
+# --types is mutually exclusive with -t and --preset
+if [ -n "${PROJECT_TYPES:-}" ]; then
+  if [ -n "$PROJECT_TYPE" ]; then
+    log_error "Cannot use both --type (-t) and --types"
     exit 1
-    ;;
-esac
-
-# If --preset was given, override the preset file
-if [ -n "${PRESET_PATH:-}" ]; then
-  PRESET_FILE="$PRESET_PATH"
-fi
-
-# Load preset content
-PRESET_CONTENT=""
-if [ -f "$PRESET_FILE" ]; then
-  PRESET_CONTENT=$(cat "$PRESET_FILE")
+  fi
+  if [ -n "${PRESET_PATH:-}" ]; then
+    log_error "Cannot use both --preset and --types"
+    exit 1
+  fi
 fi
 
 # --- Full mode: git init + .claude/ ---
@@ -169,47 +165,128 @@ fi
 
 # --- Generate CLAUDE.md ---
 UNIVERSAL_TEMPLATE="${SCRIPT_DIR}/templates/universal.md"
-CLAUDE_MD_PATH="$(pwd)/CLAUDE.md"
 
-# Parse tech stack into components
-LANGUAGE=""
-FRAMEWORK=""
-TEST_FRAMEWORK=""
-RUNTIME=""
-case "$PROJECT_TYPE" in
-  cli-tool)
-    LANGUAGE="${TECH_STACK%%,*}"
-    TEST_FRAMEWORK="$(echo "${TECH_STACK}" | grep -E 'pytest|bats|go test|cargo test|jest' | head -1 || echo 'standard')"
-    SHEBANG="bash"
-    MODULE_BOUNDARIES="(由项目自定义)"
-    ;;
-  web-app)
-    LANGUAGE="JavaScript/TypeScript"
-    FRAMEWORK="${TECH_STACK}"
-    TEST_FRAMEWORK="jest/vitest"
-    RUNTIME="Node.js"
-    UI_FRAMEWORK="${TECH_STACK}"
-    STATE_MANAGEMENT="(由项目自定义)"
-    MOCK_TOOL="vitest mocks / MSW"
-    MODULE_BOUNDARIES="(由项目自定义)"
-    ;;
-esac
+if [ -n "${PROJECT_TYPES:-}" ]; then
+  # --- Multi-type mode: one CLAUDE-<type>.md per type ---
+  OLD_IFS="$IFS"
+  IFS=","
+  for t in $PROJECT_TYPES; do
+    # Validate type
+    case "$t" in
+      cli-tool|web-app)
+        ;;
+      *)
+        log_error "Unknown project type: $t"
+        exit 1
+        ;;
+    esac
 
-render_template "$UNIVERSAL_TEMPLATE" "$CLAUDE_MD_PATH" \
-  "PROJECT_NAME=$PROJECT_NAME" \
-  "PROJECT_DESCRIPTION=${PROJECT_DESCRIPTION:-}" \
-  "LANGUAGE=$LANGUAGE" \
-  "FRAMEWORK=$FRAMEWORK" \
-  "TEST_FRAMEWORK=$TEST_FRAMEWORK" \
-  "RUNTIME=$RUNTIME" \
-  "PRESET_CONTENT=$PRESET_CONTENT" \
-  "SHEBANG=${SHEBANG:-}" \
-  "MODULE_BOUNDARIES=${MODULE_BOUNDARIES:-}" \
-  "UI_FRAMEWORK=${UI_FRAMEWORK:-}" \
-  "STATE_MANAGEMENT=${STATE_MANAGEMENT:-}" \
-  "MOCK_TOOL=${MOCK_TOOL:-}"
+    # Load preset
+    pt_preset="${SCRIPT_DIR}/templates/presets/${t}.md"
+    pt_content=""
+    if [ -f "$pt_preset" ]; then
+      pt_content=$(cat "$pt_preset")
+    fi
 
-log_success "CLAUDE.md generated"
+    # Template vars for this type
+    LANGUAGE=""; FRAMEWORK=""; TEST_FRAMEWORK=""; RUNTIME=""
+    SHEBANG=""; MODULE_BOUNDARIES=""; UI_FRAMEWORK=""; STATE_MANAGEMENT=""; MOCK_TOOL=""
+    case "$t" in
+      cli-tool)
+        LANGUAGE="${TECH_STACK%%,*}"
+        TEST_FRAMEWORK="$(echo "${TECH_STACK}" | grep -E 'pytest|bats|go test|cargo test|jest' | head -1 || echo 'standard')"
+        SHEBANG="bash"
+        MODULE_BOUNDARIES="(由项目自定义)"
+        ;;
+      web-app)
+        LANGUAGE="JavaScript/TypeScript"
+        FRAMEWORK="${TECH_STACK}"
+        TEST_FRAMEWORK="jest/vitest"
+        RUNTIME="Node.js"
+        UI_FRAMEWORK="${TECH_STACK}"
+        STATE_MANAGEMENT="(由项目自定义)"
+        MOCK_TOOL="vitest mocks / MSW"
+        MODULE_BOUNDARIES="(由项目自定义)"
+        ;;
+    esac
+
+    render_template "$UNIVERSAL_TEMPLATE" "$(pwd)/CLAUDE-${t}.md" \
+      "PROJECT_NAME=${PROJECT_NAME}" \
+      "PROJECT_DESCRIPTION=${PROJECT_DESCRIPTION:-}" \
+      "LANGUAGE=${LANGUAGE}" \
+      "FRAMEWORK=${FRAMEWORK}" \
+      "TEST_FRAMEWORK=${TEST_FRAMEWORK}" \
+      "RUNTIME=${RUNTIME}" \
+      "PRESET_CONTENT=${pt_content}" \
+      "SHEBANG=${SHEBANG}" \
+      "MODULE_BOUNDARIES=${MODULE_BOUNDARIES}" \
+      "UI_FRAMEWORK=${UI_FRAMEWORK}" \
+      "STATE_MANAGEMENT=${STATE_MANAGEMENT}" \
+      "MOCK_TOOL=${MOCK_TOOL}"
+  done
+  IFS="$OLD_IFS"
+else
+  # --- Single-type mode ---
+  # Set template vars
+  case "$PROJECT_TYPE" in
+    cli-tool|web-app)
+      PRESET_FILE="${SCRIPT_DIR}/templates/presets/${PROJECT_TYPE}.md"
+      ;;
+    *)
+      log_error "Unknown project type: $PROJECT_TYPE"
+      exit 1
+      ;;
+  esac
+
+  # If --preset was given, override the preset file
+  if [ -n "${PRESET_PATH:-}" ]; then
+    PRESET_FILE="$PRESET_PATH"
+  fi
+
+  # Load preset content
+  PRESET_CONTENT=""
+  if [ -f "$PRESET_FILE" ]; then
+    PRESET_CONTENT=$(cat "$PRESET_FILE")
+  fi
+
+  # Parse tech stack into components
+  LANGUAGE=""; FRAMEWORK=""; TEST_FRAMEWORK=""; RUNTIME=""
+  SHEBANG=""; MODULE_BOUNDARIES=""; UI_FRAMEWORK=""; STATE_MANAGEMENT=""; MOCK_TOOL=""
+  case "$PROJECT_TYPE" in
+    cli-tool)
+      LANGUAGE="${TECH_STACK%%,*}"
+      TEST_FRAMEWORK="$(echo "${TECH_STACK}" | grep -E 'pytest|bats|go test|cargo test|jest' | head -1 || echo 'standard')"
+      SHEBANG="bash"
+      MODULE_BOUNDARIES="(由项目自定义)"
+      ;;
+    web-app)
+      LANGUAGE="JavaScript/TypeScript"
+      FRAMEWORK="${TECH_STACK}"
+      TEST_FRAMEWORK="jest/vitest"
+      RUNTIME="Node.js"
+      UI_FRAMEWORK="${TECH_STACK}"
+      STATE_MANAGEMENT="(由项目自定义)"
+      MOCK_TOOL="vitest mocks / MSW"
+      MODULE_BOUNDARIES="(由项目自定义)"
+      ;;
+  esac
+
+  render_template "$UNIVERSAL_TEMPLATE" "$(pwd)/CLAUDE.md" \
+    "PROJECT_NAME=${PROJECT_NAME}" \
+    "PROJECT_DESCRIPTION=${PROJECT_DESCRIPTION:-}" \
+    "LANGUAGE=${LANGUAGE}" \
+    "FRAMEWORK=${FRAMEWORK}" \
+    "TEST_FRAMEWORK=${TEST_FRAMEWORK}" \
+    "RUNTIME=${RUNTIME}" \
+    "PRESET_CONTENT=${PRESET_CONTENT}" \
+    "SHEBANG=${SHEBANG}" \
+    "MODULE_BOUNDARIES=${MODULE_BOUNDARIES}" \
+    "UI_FRAMEWORK=${UI_FRAMEWORK}" \
+    "STATE_MANAGEMENT=${STATE_MANAGEMENT}" \
+    "MOCK_TOOL=${MOCK_TOOL}"
+
+  log_success "CLAUDE.md generated"
+fi
 
 # --- Initial commit (full mode) ---
 if [ "$MODE" = "full" ]; then

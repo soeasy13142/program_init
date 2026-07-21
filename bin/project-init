@@ -14,6 +14,7 @@ set -e
 # Default values for optional variables (prevents unbound variable issues)
 TECH_STACK=""
 PROJECT_DESCRIPTION=""
+PRESET_PATH=""
 
 PROJECT_INIT_VERSION="0.1.0"
 
@@ -28,6 +29,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     -n|--name) PROJECT_NAME="$2"; shift 2 ;;
     -t|--type) PROJECT_TYPE="$2"; shift 2 ;;
+    -p|--preset) PRESET_PATH="$2"; shift 2 ;;
     -c|--claude-only) MODE="claude-only"; shift ;;
     -y|--yes|--non-interactive) YES_MODE=1; shift ;;
     -v|--version) echo "project-init v${PROJECT_INIT_VERSION}"; exit 0 ;;
@@ -41,6 +43,7 @@ project-init v${PROJECT_INIT_VERSION}
 选项:
   -n, --name <name>    项目名
   -t, --type <type>    项目类型: cli-tool|web-app
+  -p, --preset <path>  自定义 preset 文件路径
   -c, --claude-only    只生成 CLAUDE.md (已有项目中使用)
   -y, --yes, --non-interactive  非交互模式 (使用所有默认值)
   -v, --version        版本信息
@@ -96,6 +99,12 @@ else
 fi
 
 # --- Set template vars ---
+# Validate --preset path if provided
+if [ -n "${PRESET_PATH:-}" ] && [ ! -f "$PRESET_PATH" ]; then
+  log_error "Preset file not found: $PRESET_PATH"
+  exit 1
+fi
+
 case "$PROJECT_TYPE" in
   cli-tool|web-app)
     PRESET_FILE="${SCRIPT_DIR}/templates/presets/${PROJECT_TYPE}.md"
@@ -105,6 +114,11 @@ case "$PROJECT_TYPE" in
     exit 1
     ;;
 esac
+
+# If --preset was given, override the preset file
+if [ -n "${PRESET_PATH:-}" ]; then
+  PRESET_FILE="$PRESET_PATH"
+fi
 
 # Load preset content
 PRESET_CONTENT=""

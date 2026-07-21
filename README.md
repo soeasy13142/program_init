@@ -24,7 +24,7 @@ project-init [选项] [项目目录]
 
 选项:
   -n, --name <name>    项目名
-  -t, --type <type>    项目类型: cli-tool|web-app|backend-api|knowledge-base|meta-project
+  -t, --type <type>    项目类型: cli-tool|web-app
   -c, --claude-only    只生成 CLAUDE.md (已有项目中用)
   -y, --yes            非交互模式
   -v, --version        版本

@@ -7,8 +7,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 . "${SCRIPT_DIR}/lib/template.sh"
 . "${SCRIPT_DIR}/lib/questions.sh"
 
-# Revert to set -e after sourcing lib files (which use set -eu)
-# to avoid unbound variable errors from optional vars
+# Using set -e (not -eu) in entry point because optional vars (PROJECT_DESCRIPTION, TECH_STACK, etc.)
+# may be unset in non-interactive mode. lib scripts use set -eu independently.
 set -e
 
 # Default values for optional variables (prevents unbound variable issues)
@@ -40,7 +40,7 @@ project-init v${PROJECT_INIT_VERSION}
 
 选项:
   -n, --name <name>    项目名
-  -t, --type <type>    项目类型: cli-tool|web-app|backend-api|knowledge-base|meta-project
+  -t, --type <type>    项目类型: cli-tool|web-app
   -c, --claude-only    只生成 CLAUDE.md (已有项目中使用)
   -y, --yes            非交互模式 (使用所有默认值)
   -v, --version        版本信息
@@ -85,7 +85,11 @@ fi
 
 # --- Interactive Q&A (unless -y) ---
 if [ "$YES_MODE" -eq 0 ] && [ "$MODE" = "full" ]; then
-  eval "$(collect_all "${PROJECT_NAME:-$(basename "$(pwd)")}")"
+  PROJECT_NAME=$(ask_project_name "${PROJECT_NAME:-$(basename "$(pwd)")}")
+  PROJECT_TYPE=$(ask_project_type)
+  PROJECT_DESCRIPTION=$(ask_description)
+  TECH_STACK=$(ask_tech_stack)
+  CUSTOM_RULES=$(ask_custom_rules)
 else
   PROJECT_NAME="${PROJECT_NAME:-$(basename "$(pwd)")}"
   PROJECT_TYPE="${PROJECT_TYPE:-cli-tool}"
@@ -93,7 +97,7 @@ fi
 
 # --- Set template vars ---
 case "$PROJECT_TYPE" in
-  cli-tool|web-app|backend-api|knowledge-base|meta-project)
+  cli-tool|web-app)
     PRESET_FILE="${SCRIPT_DIR}/templates/presets/${PROJECT_TYPE}.md"
     ;;
   *)
@@ -110,7 +114,7 @@ fi
 
 # --- Full mode: git init + .claude/ ---
 if [ "$MODE" = "full" ]; then
-  check_dependencies git
+  check_dependencies git envsubst
 
   if [ -d ".git" ]; then
     log_info "Git already initialized"
@@ -161,7 +165,7 @@ RUNTIME=""
 case "$PROJECT_TYPE" in
   cli-tool)
     LANGUAGE="${TECH_STACK%%,*}"
-    TEST_FRAMEWORK="$(echo "${TECH_STACK}" | grep -oE 'pytest|bats|go test|cargo test|jest' || echo 'standard')"
+    TEST_FRAMEWORK="$(echo "${TECH_STACK}" | grep -E 'pytest|bats|go test|cargo test|jest' | head -1 || echo 'standard')"
     SHEBANG="bash"
     MODULE_BOUNDARIES="(由项目自定义)"
     ;;

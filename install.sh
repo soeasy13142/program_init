@@ -1,9 +1,10 @@
 #!/bin/sh
 set -e
 
-INSTALL_DIR="${HOME}/.local/bin"
 REPO="soeasy13142/project-init"
 VERSION="${1:-main}"
+SHARE_DIR="${HOME}/.local/share/project-init"
+BIN_DIR="${HOME}/.local/bin"
 
 # Detect platform
 case "$(uname -s)" in
@@ -14,51 +15,61 @@ esac
 
 echo "Installing project-init v${VERSION}..."
 
-mkdir -p "$INSTALL_DIR"
+# Create directory structure
+mkdir -p "${SHARE_DIR}/bin"
+mkdir -p "${SHARE_DIR}/lib"
+mkdir -p "${SHARE_DIR}/templates/presets"
+mkdir -p "${BIN_DIR}"
 
-# Download the script directly from GitHub
-echo "  Downloading from ${REPO}..."
-if command -v curl >/dev/null 2>&1; then
-  if curl -fsSL "https://raw.githubusercontent.com/${REPO}/${VERSION}/bin/project-init" -o "${INSTALL_DIR}/project-init"; then
-    chmod +x "${INSTALL_DIR}/project-init"
-    echo "  ✅ Installed to ${INSTALL_DIR}/project-init"
+download_file() {
+  src="$1"
+  dst="$2"
+  url="https://raw.githubusercontent.com/${REPO}/${VERSION}/${src}"
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$url" -o "$dst" >/dev/null 2>&1
+  elif command -v wget >/dev/null 2>&1; then
+    wget -q "$url" -O "$dst"
   else
-    echo "  ✗ Download failed"
+    echo "  Neither curl nor wget found"
     exit 1
   fi
-elif command -v wget >/dev/null 2>&1; then
-  wget -q "https://raw.githubusercontent.com/${REPO}/${VERSION}/bin/project-init" -O "${INSTALL_DIR}/project-init"
-  chmod +x "${INSTALL_DIR}/project-init"
-  echo "  ✅ Installed to ${INSTALL_DIR}/project-init"
-else
-  echo "  ✗ Neither curl nor wget found"
-  exit 1
-fi
+}
 
-# Also download templates
-TEMPLATE_DIR="${HOME}/.local/share/project-init/templates"
-mkdir -p "$TEMPLATE_DIR/presets"
+echo "  Downloading from ${REPO}..."
 
-for tmpl in universal.md presets/cli-tool.md presets/web-app.md; do
-  if command -v curl >/dev/null 2>&1; then
-    curl -fsSL "https://raw.githubusercontent.com/${REPO}/${VERSION}/templates/${tmpl}" \
-      -o "${TEMPLATE_DIR}/${tmpl}" >/dev/null 2>&1
-  else
-    wget -q "https://raw.githubusercontent.com/${REPO}/${VERSION}/templates/${tmpl}" \
-      -O "${TEMPLATE_DIR}/${tmpl}"
-  fi
-done
-echo "  ✅ Templates installed to ${TEMPLATE_DIR}"
+# Download main script
+download_file "bin/project-init" "${SHARE_DIR}/bin/project-init"
+chmod +x "${SHARE_DIR}/bin/project-init"
+
+# Download lib files
+download_file "lib/helpers.sh" "${SHARE_DIR}/lib/helpers.sh"
+download_file "lib/template.sh" "${SHARE_DIR}/lib/template.sh"
+download_file "lib/questions.sh" "${SHARE_DIR}/lib/questions.sh"
+
+# Download templates
+download_file "templates/universal.md" "${SHARE_DIR}/templates/universal.md"
+download_file "templates/presets/cli-tool.md" "${SHARE_DIR}/templates/presets/cli-tool.md"
+download_file "templates/presets/web-app.md" "${SHARE_DIR}/templates/presets/web-app.md"
+
+# Install wrapper in PATH
+cat > "${BIN_DIR}/project-init" << 'WRAPPER'
+#!/bin/sh
+exec ~/.local/share/project-init/bin/project-init "$@"
+WRAPPER
+chmod +x "${BIN_DIR}/project-init"
+
+echo "  Installed to ${SHARE_DIR}"
+echo "  Wrapper at ${BIN_DIR}/project-init"
 
 # Check PATH
 case ":${PATH}:" in
-  *:"${INSTALL_DIR}":*)
+  *:"${BIN_DIR}":*)
     ;;
   *)
     echo ""
-    echo "  ⚠️  ${INSTALL_DIR} is not in your PATH."
-    echo "     Add this to your shell profile:"
-    echo "       export PATH=\"\$HOME/.local/bin:\$PATH\""
+    echo "  Warning: ${BIN_DIR} is not in your PATH."
+    echo "    Add this to your shell profile:"
+    echo "      export PATH=\"\$HOME/.local/bin:\$PATH"
     ;;
 esac
 

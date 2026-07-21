@@ -17,20 +17,14 @@ ask_project_name() {
 
 ask_project_type() {
   echo "  项目类型:"
-  echo "    1) cli-tool       — CLI 工具 (Python/Bash/Go/Rust)"
-  echo "    2) web-app        — 前端/小程序/Web 应用"
-  echo "    3) backend-api    — 后端 API 服务"
-  echo "    4) knowledge-base — 知识库/笔记"
-  echo "    5) meta-project   — 方法论/元项目"
+  echo "    1) cli-tool  — CLI 工具 (Python/Bash/Go/Rust)"
+  echo "    2) web-app   — 前端/小程序/Web 应用"
   printf "  请选择 [1]: "
   read -r choice
   choice="${choice:-1}"
   case "$choice" in
     1) echo "cli-tool" ;;
     2) echo "web-app" ;;
-    3) echo "backend-api" ;;
-    4) echo "knowledge-base" ;;
-    5) echo "meta-project" ;;
     *) echo "cli-tool" ;;
   esac
 }

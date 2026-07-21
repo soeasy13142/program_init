@@ -37,9 +37,6 @@ project-init [选项] [项目目录]
 |------|------|------|
 | `cli-tool` | CLI 工具 | Python/Bash/Go/Rust |
 | `web-app` | Web 应用 | 前端/小程序/Web |
-| `backend-api` | 后端 API | RESTful/gRPC |
-| `knowledge-base` | 知识库 | Obsidian/文档 |
-| `meta-project` | 元项目 | 方法论/模板 |
 
 ## CLAUDE.md 模板
 

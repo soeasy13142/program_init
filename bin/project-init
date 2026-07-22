@@ -122,7 +122,40 @@ if [ -n "${PROJECT_TYPES:-}" ]; then
   fi
 fi
 
-# --- Full mode: git init + .claude/ ---
+# --- .claude/ directory (always created, idempotent) ---
+mkdir -p .claude/rules
+
+# Write settings.json only if it doesn't exist yet (claude-only mode)
+# or always (full mode overwrites to ensure fresh config)
+if [ "$MODE" = "claude-only" ]; then
+  if [ ! -f ".claude/settings.json" ]; then
+    cat > .claude/settings.json << 'SETTINGS'
+{
+  "permissions": {
+    "allow": [],
+    "deny": []
+  }
+}
+SETTINGS
+    log_success ".claude/settings.json created"
+  else
+    log_info ".claude/settings.json already exists, skipped"
+  fi
+  log_success ".claude/ directory ready"
+else
+  cat > .claude/settings.json << 'SETTINGS'
+{
+  "permissions": {
+    "allow": [],
+    "deny": []
+  }
+}
+SETTINGS
+  log_success ".claude/settings.json created"
+  log_success ".claude/ directory created"
+fi
+
+# --- Full mode: git init + .gitignore ---
 if [ "$MODE" = "full" ]; then
   check_dependencies git envsubst
 
@@ -132,9 +165,6 @@ if [ "$MODE" = "full" ]; then
     git init > /dev/null 2>&1
     log_success "git init"
   fi
-
-  mkdir -p .claude/rules
-  log_success ".claude/ directory created"
 
   # Write .gitignore if not exists
   if [ ! -f ".gitignore" ]; then
@@ -149,18 +179,6 @@ if [ "$MODE" = "full" ]; then
 GITIGNORE
     log_success ".gitignore created"
   fi
-
-  # Write basic project .claude/settings.json
-  mkdir -p .claude
-  cat > .claude/settings.json << 'SETTINGS'
-{
-  "permissions": {
-    "allow": [],
-    "deny": []
-  }
-}
-SETTINGS
-  log_success ".claude/settings.json created"
 fi
 
 # --- Generate CLAUDE.md ---

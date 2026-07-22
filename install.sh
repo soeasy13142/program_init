@@ -6,11 +6,10 @@ VERSION="${1:-main}"
 SHARE_DIR="${HOME}/.local/share/project-init"
 BIN_DIR="${HOME}/.local/bin"
 
-# Detect platform
+# Unsupported OS check
 case "$(uname -s)" in
-  Darwin) OS="darwin" ;;
-  Linux)  OS="linux" ;;
-  *)      echo "Unsupported OS"; exit 1 ;;
+  Darwin|Linux) ;;
+  *)            echo "Unsupported OS"; exit 1 ;;
 esac
 
 echo "Installing project-init v${VERSION}..."

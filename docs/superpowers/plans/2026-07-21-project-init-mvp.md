@@ -752,7 +752,7 @@ Write `install.sh`:
 set -e
 
 INSTALL_DIR="${HOME}/.local/bin"
-REPO="soeasy13142/project-init"
+REPO="soeasy13142/program_init"
 VERSION="${1:-main}"
 
 # Detect platform
@@ -846,7 +846,7 @@ Write `README.md`:
 一键初始化新项目的 `.claude/` 目录、`CLAUDE.md` 和 Git 仓库。
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/soeasy13142/project-init/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/soeasy13142/program_init/main/install.sh | bash
 ```
 
 ## 快速开始
@@ -895,12 +895,12 @@ project-init [选项] [项目目录]
 
 ### 一键安装
 ```bash
-curl -fsSL https://raw.githubusercontent.com/soeasy13142/project-init/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/soeasy13142/program_init/main/install.sh | bash
 ```
 
 ### 手动安装
 ```bash
-git clone https://github.com/soeasy13142/project-init.git
+git clone https://github.com/soeasy13142/program_init.git
 cd project-init
 ln -s "$(pwd)/bin/project-init" ~/.local/bin/
 ```

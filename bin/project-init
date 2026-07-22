@@ -44,7 +44,7 @@ project-init v${PROJECT_INIT_VERSION}
 
 选项:
   -n, --name <name>    项目名
-  -t, --type <type>    项目类型: cli-tool|web-app|ts-lib|next-app
+  -t, --type <type>    项目类型: cli-tool|shell-script|web-app|ts-lib|next-app
   -p, --preset <path>  自定义 preset 文件路径
   --types <type,type>  批量初始化 (如 cli-tool,web-app,ts-lib,next-app)
   -c, --claude-only    只生成 CLAUDE.md (已有项目中使用)
@@ -101,6 +101,13 @@ if [ "$YES_MODE" -eq 0 ] && [ "$MODE" = "full" ]; then
 else
   PROJECT_NAME="${PROJECT_NAME:-$(basename "$(pwd)")}"
   PROJECT_TYPE="${PROJECT_TYPE:-cli-tool}"
+  # Default TECH_STACK for non-interactive mode
+  if [ -z "$TECH_STACK" ]; then
+    case "$PROJECT_TYPE" in
+      cli-tool|shell-script) TECH_STACK="Shell, bats/shellspec" ;;
+      web-app|ts-lib|next-app) TECH_STACK="TypeScript" ;;
+    esac
+  fi
 fi
 
 # --- Validate flags ---
@@ -206,6 +213,16 @@ if [ -n "${PROJECT_TYPES:-}" ]; then
         SHEBANG="bash"
         MODULE_BOUNDARIES="(由项目自定义)"
         ;;
+        shell-script)
+          LANGUAGE="Shell"
+          TEST_FRAMEWORK="bats/shellspec"
+          SHEBANG="bash"
+          MODULE_BOUNDARIES="bin/ — 入口脚本（report.sh 等）
+  lib/ — 库函数
+  config/ — 配置文件
+  logs/ — 运行日志
+  cron/ — CRON 任务定义"
+          ;;
       web-app)
         LANGUAGE="JavaScript/TypeScript"
         FRAMEWORK="${TECH_STACK}"
@@ -253,14 +270,15 @@ types/ — TypeScript 类型定义"
       "MODULE_BOUNDARIES=${MODULE_BOUNDARIES}" \
       "UI_FRAMEWORK=${UI_FRAMEWORK}" \
       "STATE_MANAGEMENT=${STATE_MANAGEMENT}" \
-      "MOCK_TOOL=${MOCK_TOOL}"
+      "MOCK_TOOL=${MOCK_TOOL}" \
+      "CUSTOM_RULES=${CUSTOM_RULES:-}"
   done
   IFS="$OLD_IFS"
 else
   # --- Single-type mode ---
   # Set template vars
   case "$PROJECT_TYPE" in
-    cli-tool|web-app|ts-lib|next-app)
+    cli-tool|shell-script|web-app|ts-lib|next-app)
       PRESET_FILE="${SCRIPT_DIR}/templates/presets/${PROJECT_TYPE}.md"
       ;;
     *)
@@ -290,6 +308,16 @@ else
       SHEBANG="bash"
       MODULE_BOUNDARIES="(由项目自定义)"
       ;;
+      shell-script)
+        LANGUAGE="Shell"
+        TEST_FRAMEWORK="bats/shellspec"
+        SHEBANG="bash"
+        MODULE_BOUNDARIES="bin/ — 入口脚本（report.sh 等）
+  lib/ — 库函数
+  config/ — 配置文件
+  logs/ — 运行日志
+  cron/ — CRON 任务定义"
+        ;;
     web-app)
       LANGUAGE="JavaScript/TypeScript"
       FRAMEWORK="${TECH_STACK}"
@@ -333,8 +361,8 @@ types/ — TypeScript 类型定义"
     "MODULE_BOUNDARIES=${MODULE_BOUNDARIES}" \
     "UI_FRAMEWORK=${UI_FRAMEWORK}" \
     "STATE_MANAGEMENT=${STATE_MANAGEMENT}" \
-    "MOCK_TOOL=${MOCK_TOOL}"
-
+    "MOCK_TOOL=${MOCK_TOOL}" \
+    "CUSTOM_RULES=${CUSTOM_RULES:-}"
   log_success "CLAUDE.md generated"
 fi
 

@@ -7,7 +7,7 @@ SCRIPT_DIR="${SCRIPT_DIR:-$(cd "$(dirname "$0")" && pwd)}"
 ask_project_name() {
   default="${1:-}"
   if [ -n "$default" ]; then
-    printf "  项目名称 [${default}]: "
+    printf '  项目名称 [%s]: ' "${default}"
   else
     printf "  项目名称: "
   fi
@@ -17,18 +17,20 @@ ask_project_name() {
 
 ask_project_type() {
   echo "  项目类型:"
-  echo "    1) cli-tool  — CLI 工具 (Python/Bash/Go/Rust)"
-  echo "    2) web-app   — 前端/小程序/Web 应用"
-  echo "    3) ts-lib    — TypeScript 库"
-  echo "    4) next-app  — Next.js 应用"
+  echo "    1) cli-tool      — CLI 工具 (Python/Bash/Go/Rust)"
+  echo "    2) shell-script  — Shell 脚本 (bash/zsh, CRON, 运维)"
+  echo "    3) web-app       — 前端/小程序/Web 应用"
+  echo "    4) ts-lib        — TypeScript 库"
+  echo "    5) next-app      — Next.js 应用"
   printf "  请选择 [1]: "
   read -r choice
   choice="${choice:-1}"
   case "$choice" in
     1) echo "cli-tool" ;;
-    2) echo "web-app" ;;
-    3) echo "ts-lib" ;;
-    4) echo "next-app" ;;
+    2) echo "shell-script" ;;
+    3) echo "web-app" ;;
+    4) echo "ts-lib" ;;
+    5) echo "next-app" ;;
     *) echo "cli-tool" ;;
   esac
 }

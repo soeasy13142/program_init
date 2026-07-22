@@ -9,7 +9,7 @@
 
 - **MVP 已完成** — 见 `docs/superpowers/plans/2026-07-21-project-init-mvp.md`
 - 所有 10 个 Task 均完成并通过 code review
-- `project-init v0.1.0` 已可工作在 `-t cli-tool` 和 `-t web-app` 两种类型
+- `project-init v0.1.0` 已可工作在 `cli-tool`、`shell-script`、`web-app`、`ts-lib`、`next-app` 五种类型
 
 ## 已知待办（README 中列出）
 
@@ -18,17 +18,22 @@
 - `--non-interactive` 别名
 - TypeScript preset（`ts-lib`、`next-app`）
 
+## 已修复问题
+
+| # | 问题 | 状态 | 文件 |
+|---|------|------|------|
+| 1 | `install.sh` REPO 指向不存在的 `project-init` 仓库 | ✅ 已修复 | `install.sh:6` |
+| 2 | `CUSTOM_RULES` 收集但从未传给 `render_template` | ✅ 已修复 | `bin/project-init`, `templates/universal.md` |
+| 3~5 | 文档引用不存在的仓库 `github.com/.../project-init` | ✅ 已修复 | `CLAUDE.md`, 设计规格, MVP计划 |
+| 6 | `install.sh` 中 `OS` 变量未使用 (SC2034) | ✅ 已修复 | `install.sh` |
+| 7 | `lib/questions.sh:10` printf 格式字符串含变量 (SC2059) | ✅ 已修复 | `lib/questions.sh` |
+| 8 | 缺少 `shell-script` 预设 | ✅ 已新增 | `templates/presets/shell-script.md` |
+| 9 | `-y` 模式技术栈字段为空 | ✅ 已修复 | `bin/project-init` (非交互模式默认值) |
+
 ## 已知问题
 
 - `envsubst` 在 macOS/Linux 预装，但某些最小化 Docker 镜像可能缺失
 - 非 `-y` 模式下，如果 stdin 不是终端，`read` 会静默返回空值
-- **Bug #1 (已修复):** `install.sh` 中 `REPO="soeasy13142/project-init"` 错误，应为 `soeasy13142/program_init`；已修复
-- **Bug #2 (待修复):** `CUSTOM_RULES` 在交互模式收集 (`bin/project-init:100`) 但从未传给 `render_template`，模板也没有对应占位符，用户输入被静默丢弃
-- **Bug #3~#5 (待修复):** CLAUDE.md、设计规格、MVP 计划等多处文档引用不存在的仓库 `github.com/soeasy13142/project-init`，应为 `program_init`
-- **Bug #6 (待清理):** `install.sh` 中 `OS` 变量被赋值但从未使用 (SC2034)
-- **Bug #7 (待修复):** `lib/questions.sh:10` printf 格式字符串含变量 (SC2059)
-- **Suggestion #8:** 缺少 `shell-script` 预设，纯 Shell 项目只能选 `cli-tool`
-- **Suggestion #9:** `-y` 非交互模式下，技术栈字段全部为空；cli-tool 等类型可设合理默认值
 
 ## 架构决策记录
 
@@ -51,4 +56,6 @@
 
 ## 新约定（工作过程中追加）
 
-_（暂无 — 按需追加）_
+| 2026-07-22 | `shell-script` 预设 — Shell 项目专用 | VPS 每日汇报等运维脚本需要 cron/SSH 等内容 |
+| 2026-07-22 | `.claude/` 脱离 `full` 模式限制 | claude-only 模式也需要 `.claude/` 目录 |
+| 2026-07-22 | `CUSTOM_RULES` 传递到模板 | 交互模式用户输入的自定义规则不再丢失 |

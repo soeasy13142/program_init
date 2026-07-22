@@ -9,7 +9,7 @@
 
 ```bash
 # Clone & dev
-git clone https://github.com/soeasy13142/project-init.git
+git clone https://github.com/soeasy13142/program_init.git
 cd project-init
 
 # Run directly (dev mode)

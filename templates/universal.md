@@ -28,3 +28,5 @@
 以下内容由项目类型预设填充
 
 {{PRESET_CONTENT}}
+
+{{CUSTOM_RULES}}

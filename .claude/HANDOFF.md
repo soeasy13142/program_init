@@ -22,6 +22,13 @@
 
 - `envsubst` 在 macOS/Linux 预装，但某些最小化 Docker 镜像可能缺失
 - 非 `-y` 模式下，如果 stdin 不是终端，`read` 会静默返回空值
+- **Bug #1 (已修复):** `install.sh` 中 `REPO="soeasy13142/project-init"` 错误，应为 `soeasy13142/program_init`；已修复
+- **Bug #2 (待修复):** `CUSTOM_RULES` 在交互模式收集 (`bin/project-init:100`) 但从未传给 `render_template`，模板也没有对应占位符，用户输入被静默丢弃
+- **Bug #3~#5 (待修复):** CLAUDE.md、设计规格、MVP 计划等多处文档引用不存在的仓库 `github.com/soeasy13142/project-init`，应为 `program_init`
+- **Bug #6 (待清理):** `install.sh` 中 `OS` 变量被赋值但从未使用 (SC2034)
+- **Bug #7 (待修复):** `lib/questions.sh:10` printf 格式字符串含变量 (SC2059)
+- **Suggestion #8:** 缺少 `shell-script` 预设，纯 Shell 项目只能选 `cli-tool`
+- **Suggestion #9:** `-y` 非交互模式下，技术栈字段全部为空；cli-tool 等类型可设合理默认值
 
 ## 架构决策记录
 

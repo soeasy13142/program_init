@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-REPO="soeasy13142/project-init"
+REPO="soeasy13142/program_init"
 VERSION="${1:-main}"
 SHARE_DIR="${HOME}/.local/share/project-init"
 BIN_DIR="${HOME}/.local/bin"

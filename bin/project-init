@@ -100,9 +100,12 @@ if [ "$YES_MODE" -eq 0 ] && [ "$MODE" = "full" ]; then
   CUSTOM_RULES=$(ask_custom_rules)
 else
   PROJECT_NAME="${PROJECT_NAME:-$(basename "$(pwd)")}"
-  PROJECT_TYPE="${PROJECT_TYPE:-cli-tool}"
-  # Default TECH_STACK for non-interactive mode
-  if [ -z "$TECH_STACK" ]; then
+  # Only default PROJECT_TYPE for single-type mode (--types uses its own logic)
+  if [ -z "${PROJECT_TYPES:-}" ]; then
+    PROJECT_TYPE="${PROJECT_TYPE:-cli-tool}"
+  fi
+  # Default TECH_STACK for non-interactive mode (single-type only)
+  if [ -z "$TECH_STACK" ] && [ -n "${PROJECT_TYPE:-}" ]; then
     case "$PROJECT_TYPE" in
       cli-tool|shell-script) TECH_STACK="Shell, bats/shellspec" ;;
       web-app|ts-lib|next-app) TECH_STACK="TypeScript" ;;
@@ -161,6 +164,37 @@ SETTINGS
   log_success ".claude/settings.json created"
   log_success ".claude/ directory created"
 fi
+
+# --- Generate .claude/HANDOFF.md (idempotent) ---
+if [ ! -f ".claude/HANDOFF.md" ]; then
+  DATE=$(date +%Y-%m-%d)
+  cat > .claude/HANDOFF.md << HANDOFF_EOF
+# HANDOFF.md — 项目交接文档
+
+> **改前必读，改后必追加。**
+
+## 项目概况
+
+- 项目名: ${PROJECT_NAME}
+- 初始化日期: ${DATE}
+
+## 约定
+
+（项目特有约定将记录在此）
+
+## 变更历史
+
+| 日期 | 变更内容 |
+|------|----------|
+| ${DATE} | 项目初始化 |
+HANDOFF_EOF
+  log_success ".claude/HANDOFF.md created"
+else
+  log_info ".claude/HANDOFF.md already exists, skipped"
+fi
+
+# --- Create docs/plans/ for D1 (plan storage) ---
+mkdir -p docs/plans
 
 # --- Full mode: git init + .gitignore ---
 if [ "$MODE" = "full" ]; then
@@ -379,5 +413,6 @@ log_success "Done! Project initialized at $(pwd)"
 echo ""
 echo "  ${CYAN}Next steps:${NC}"
 echo "  1. Edit CLAUDE.md to refine project-specific rules"
-echo "  2. Start coding: claude"
+echo "  2. Review .claude/HANDOFF.md and fill in project conventions"
+echo "  3. Start coding: claude"
 echo ""

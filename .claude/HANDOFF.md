@@ -10,6 +10,7 @@
 - **MVP 已完成** — 见 `docs/superpowers/plans/2026-07-21-project-init-mvp.md`
 - 所有 10 个 Task 均完成并通过 code review
 - `project-init v0.1.0` 已可工作在 `cli-tool`、`shell-script`、`web-app`、`ts-lib`、`next-app` 五种类型
+- **2026-08-18 交互与依赖修复** — 修复 `ask_*` 提示符污染变量、非终端 stdin 静默退出、claude-only 缺 envsubst 裸崩溃；详见 `docs/handover/2026-08-18-fix-interactive-and-deps.md`
 
 ## 已知待办（README 中列出）
 
@@ -29,11 +30,14 @@
 | 7 | `lib/questions.sh:10` printf 格式字符串含变量 (SC2059) | ✅ 已修复 | `lib/questions.sh` |
 | 8 | 缺少 `shell-script` 预设 | ✅ 已新增 | `templates/presets/shell-script.md` |
 | 9 | `-y` 模式技术栈字段为空 | ✅ 已修复 | `bin/project-init` (非交互模式默认值) |
+| 10 | `ask_*` 提示符/菜单混入 `$(...)` 捕获的变量值，交互模式必然失败 | ✅ 已修复 | `lib/questions.sh` |
+| 11 | 非终端 stdin 下 `read` 撞 EOF 触发 `set -e` 静默退出（exit 1 无输出） | ✅ 已修复 | `bin/project-init` (tty 守卫), `lib/questions.sh` (EOF 兜底) |
+| 12 | `-c` 模式缺失 envsubst 时裸崩溃且先留下 `.claude/` 等半成品 | ✅ 已修复 | `bin/project-init` (依赖检查提前) |
+| 13 | README 声称 envsubst「macOS / Linux 预装」与事实不符 | ✅ 已修复 | `README.md` |
 
 ## 已知问题
 
-- `envsubst` 在 macOS/Linux 预装，但某些最小化 Docker 镜像可能缺失
-- 非 `-y` 模式下，如果 stdin 不是终端，`read` 会静默返回空值
+- 已全部修复（见上表 #10~#13），暂无已知问题。
 
 ## 架构决策记录
 
@@ -59,3 +63,6 @@
 | 2026-07-22 | `shell-script` 预设 — Shell 项目专用 | VPS 每日汇报等运维脚本需要 cron/SSH 等内容 |
 | 2026-07-22 | `.claude/` 脱离 `full` 模式限制 | claude-only 模式也需要 `.claude/` 目录 |
 | 2026-07-22 | `CUSTOM_RULES` 传递到模板 | 交互模式用户输入的自定义规则不再丢失 |
+| 2026-08-18 | `ask_*` 提示符/菜单一律走 stderr，stdout 只输出数据值 | 保证 `$(...)` 捕获到干净值，交互模式可用 |
+| 2026-08-18 | 交互模式要求 stdin 为终端，否则给出指引并退出 | 非交互场景统一走 `-y`，避免 `read` 失败静默中止 |
+| 2026-08-18 | 依赖检查提前到任何文件生成之前（两个模式都查） | 失败时不留半成品副作用 |

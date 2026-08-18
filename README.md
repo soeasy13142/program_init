@@ -72,7 +72,7 @@ project-init --version
 
 - **POSIX Shell** (`/bin/sh`) — bash / zsh / dash 均可
 - **Git** — 初始化仓库
-- **envsubst** — 模板变量替换（macOS / Linux 预装，或通过 `gettext` 包安装）
+- **envsubst**（GNU gettext 的一部分）— 模板变量替换；macOS 需 `brew install gettext`（keg-only，需加入 PATH），Linux 需 `gettext-base`（Debian/Ubuntu 多数自带，最小化镜像可能缺失）
 
 ## Quick Start
 

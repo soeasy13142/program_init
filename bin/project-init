@@ -82,11 +82,26 @@ cat << "EOF"
 ╰─────────────────────────────╯
 EOF
 
+# --- Dependency checks (fail fast, before any prompts or file generation) ---
+if [ "$MODE" = "full" ]; then
+  check_dependencies git envsubst
+else
+  check_dependencies envsubst
+fi
+
 # --- Determine target directory ---
 if [ -n "${PROJECT_DIR:-}" ]; then
   mkdir -p "$PROJECT_DIR"
   cd "$PROJECT_DIR"
   log_info "Working in: $(pwd)"
+fi
+
+# --- Non-interactive stdin guard ---
+# 交互式提问需要终端；stdin 非终端时给出指引退出，避免 read 失败后静默中止
+if [ "$YES_MODE" -eq 0 ] && [ "$MODE" = "full" ] && [ ! -t 0 ]; then
+  log_error "stdin 不是终端：无法进行交互式提问。"
+  log_info "请在脚本 / CI 中使用 -y (--yes) 非交互模式，或在终端中直接运行。"
+  exit 1
 fi
 
 # --- Interactive Q&A (unless -y) ---
@@ -198,8 +213,6 @@ mkdir -p docs/plans
 
 # --- Full mode: git init + .gitignore ---
 if [ "$MODE" = "full" ]; then
-  check_dependencies git envsubst
-
   if [ -d ".git" ]; then
     log_info "Git already initialized"
   else
